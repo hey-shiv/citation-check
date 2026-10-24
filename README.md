@@ -68,6 +68,6 @@ python3 -m pytest tests
 
 ## The full kit
 
-This is one of five skills in the **Claude Code Research Kit for ML Engineers**: paper digest, related-work table, citation check, reproduction plan, and Zotero to Obsidian. Join the waitlist: https://shivashant.gumroad.com/l/mjjiv
+This is one of five skills in the **Claude Code Research Kit for ML Engineers**: paper digest, related-work table, citation check, reproduction plan, and Zotero to Obsidian, with a worked example on three AI-music papers. Get the full kit: https://shivashant.gumroad.com/l/unaeem
 
 MIT licensed.
