@@ -113,30 +113,31 @@ def arxiv_id(entry):
 SYSTEM_CA = "/etc/ssl/cert.pem"  # present on macOS and most Linux
 
 
-def _open(req, ctx=None):
-    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+RETRY_CODES = (429, 500, 502, 503, 504)
 
 
-def http_get(url, mailto=None, retries=3):
+def http_get(url, mailto=None, retries=3, raw=False):
+    """GET url and return text (or bytes if raw), retrying rate limits and brief outages."""
     agent = "citation-check/1.0" + (f" (mailto:{mailto})" if mailto else "")
     req = urllib.request.Request(url, headers={"User-Agent": agent})
-    ctx = None
-    for attempt in range(retries + 1):
+    ctx, attempt = None, 0
+    while True:
         try:
-            return _open(req, ctx)
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                body = resp.read()
+            return body if raw else body.decode("utf-8", errors="replace")
         except urllib.error.HTTPError as e:
             # rate limited or briefly down: wait (Retry-After if given) and try again
-            if e.code not in (429, 503) or attempt == retries:
+            if e.code not in RETRY_CODES or attempt == retries:
                 raise
             wait = e.headers.get("Retry-After", "")
             time.sleep(min(int(wait), 30) if wait.isdigit() else 2 * 2 ** attempt)
+            attempt += 1
         except urllib.error.URLError as e:
             # python.org builds on macOS ship without CA certificates; retry with the system bundle
             if ctx or not isinstance(e.reason, ssl.SSLCertVerificationError) or not os.path.exists(SYSTEM_CA):
                 raise
             ctx = ssl.create_default_context(cafile=SYSTEM_CA)
-            return _open(req, ctx)
 
 
 def _crossref_item(item):
